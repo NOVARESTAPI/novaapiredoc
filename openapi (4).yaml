@@ -1,0 +1,1912 @@
+openapi: 3.0.0
+servers:
+  - url: https://demoapi8080.phillipnova.com.sg
+    variables: {}
+  - description: Streaming
+    url: https://demoapi8081.phillipnova.com.sg
+    variables: {}
+info:
+  title: PHILLIP NOVA REST API
+  version: 1.0.0
+  description: >-
+    An alternative way to connect into NOVA is via API which is now available in
+    REST (Representational State Transfer) protocol and documentation is
+    published using Swagger software (https://swagger.io/tools/swaggerhub/). 
+    Variants of the code are generated using Swagger tools into Python, C#,
+    Java.  This REST API can be used by trading programs to send orders to NOVA
+    besides using the NOVA web html or mobile GUI to do so. You can also find
+    this documentation listed on Swagger Hub "PHILLIPNOVA REST API SPEC" using
+    their login access.  Each NOVA User ID is fungible to log in to our trading
+    software or API.  Our API supports Futures, Forex, Stocks and Options. 
+    Listed below are the endpoints required to access our servers.
+  license:
+    name: Apache 2.0
+    url: http://www.apache.org/licenses/LICENSE-2.0.html
+tags:
+  - name: Authorization
+    description: Password authentication.
+  - name: Broker Configuration
+    description: Broker Configuration API group
+  - name: Account
+    description: Account API group
+  - name: Trading
+    description: Trading API group
+  - name: Market Data
+    description: Market Data API group
+  - name: Data Permissions
+    description: Data Permissions API group
+  - name: Data Integration
+    description: Data Integration API group
+paths:
+  /api/authorize:
+    post:
+      tags:
+        - Authorization
+      summary: Get access token from username and password
+      description: >-
+        Register your free Demo Username at
+        (https://www.phillipnova.com.sg/request-a-demo-phillip-nova/)
+      security:
+        - bearerAuth: []
+      requestBody:
+        required: true
+        content:
+          application/x-www-form-urlencoded:
+            schema:
+              type: object
+              required:
+                - username
+                - password
+              properties:
+                login:
+                  type: string
+                  description: login name of user
+                  example: xxx@email.com
+                password:
+                  type: string
+                  description: password of user
+                  example: Upperandlowercase123
+      responses:
+        '200':
+          description: success
+          content:
+            application/json:
+              schema:
+                oneOf:
+                  - $ref: '#/components/schemas/AuthorizeResponse'
+                  - $ref: '#/components/schemas/ErrorResponse'
+  /api/config:
+    get:
+      tags:
+        - Broker Configuration
+      summary: Get localized configuration.
+      parameters:
+        - in: query
+          name: locale
+          schema:
+            type: string
+            description: language id
+      responses:
+        '200':
+          description: success
+          content:
+            application/json:
+              schema:
+                oneOf:
+                  - $ref: '#/components/schemas/ConfigResponse'
+                  - $ref: '#/components/schemas/ErrorResponse'
+  /api/mapping:
+    get:
+      tags:
+        - Broker Configuration
+      summary: Return all broker instrument symbol from user entitlement
+      responses:
+        '200':
+          description: SUCCESS
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  symbols:
+                    type: array
+                    items:
+                      type: object
+                      properties:
+                        f:
+                          type: array
+                          items:
+                            type: string
+                            example: EURUSD
+                        s:
+                          type: string
+                          example: FX_IDC:EURUSD
+                  fields:
+                    type: array
+                    items:
+                      type: string
+                      description: Array with the only one element
+                      example: brokerSymbol
+  /api/accounts:
+    get:
+      tags:
+        - Account
+      summary: Get a list of accounts tagged to the user.
+      security:
+        - bearerAuth: []
+      parameters:
+        - in: query
+          name: locale
+          schema:
+            type: string
+            description: language id
+      responses:
+        '200':
+          description: Success
+          content:
+            application/json:
+              schema:
+                oneOf:
+                  - $ref: '#/components/schemas/AccountResponse'
+                  - $ref: '#/components/schemas/ErrorResponse'
+  /api/accounts/{accountId}/instruments:
+    get:
+      tags:
+        - Account
+      summary: Tradeable Symbols
+      description: >-
+        Return the list of the instruments that are available for trading with
+        the specified account.
+      security:
+        - bearerAuth: []
+      parameters:
+        - in: query
+          name: locale
+          schema:
+            type: string
+            description: language id
+        - in: path
+          name: accountId
+          required: true
+          schema:
+            type: string
+            description: Account identifier
+      responses:
+        '200':
+          description: SUCCESS
+          content:
+            application/json:
+              schema:
+                oneOf:
+                  - $ref: '#/components/schemas/InstrumentsResponse'
+                  - $ref: '#/components/schemas/ErrorResponse'
+  /api/accounts/{accountId}/state:
+    get:
+      tags:
+        - Account
+      summary: get account information
+      description: Returns the account balance, equity and summary
+      security:
+        - bearerAuth: []
+      parameters:
+        - in: path
+          name: accountId
+          required: true
+          schema:
+            type: string
+            description: accountId of user
+        - in: query
+          name: locale
+          required: true
+          schema:
+            type: string
+            description: locale setting
+      responses:
+        '200':
+          description: SUCCESS
+          content:
+            application/json:
+              schema:
+                oneOf:
+                  - $ref: '#/components/schemas/AccountStateResponse'
+                  - $ref: '#/components/schemas/ErrorResponse'
+  /api/accounts/{accountId}/orders:
+    get:
+      tags:
+        - Account
+      summary: get order information
+      description: Retrieve the order details
+      security:
+        - bearerAuth: []
+      parameters:
+        - in: path
+          name: accountId
+          required: true
+          schema:
+            type: string
+            description: accountId of user
+        - in: query
+          name: locale
+          required: true
+          schema:
+            type: string
+            description: locale setting
+      responses:
+        '200':
+          description: SUCCESS
+          content:
+            application/json:
+              schema:
+                oneOf:
+                  - $ref: '#/components/schemas/OrdersResponse'
+                  - $ref: '#/components/schemas/ErrorResponse'
+    post:
+      tags:
+        - Trading
+      summary: Place a new order.
+      description: >-
+        Custom Order dialog fields defined in the accounts are sent along with
+        the standard fields in the order object.
+      security:
+        - bearerAuth: []
+      parameters:
+        - in: path
+          name: accountId
+          required: true
+          schema:
+            type: string
+            description: accountId of user
+        - in: query
+          name: locale
+          required: true
+          schema:
+            type: string
+            description: locale setting
+        - in: query
+          name: requestId
+          required: true
+          schema:
+            type: string
+            description: Unique identifier for a request
+        - in: query
+          name: confirmId
+          required: true
+          schema:
+            type: string
+            description: identifier of an order received in the preview order request.
+      requestBody:
+        required: true
+        content:
+          application/x-www-form-urlencoded:
+            schema:
+              type: object
+              required:
+                - instrument
+                - qty
+                - side
+                - type
+                - currentAsk
+                - currentBid
+              properties:
+                instrument:
+                  type: string
+                  example: EURUSD
+                side:
+                  type: string
+                  example: buy
+                type:
+                  type: string
+                  example: limit, market, stop
+                qty:
+                  type: number
+                  example: 1000
+                limitPrice:
+                  type: number
+                  example: 1.23456
+                stopPrice:
+                  type: number
+                  example: 1.345
+                durationType:
+                  type: string
+                  example: gtt
+                durationDateTime:
+                  type: number
+                  format: UNIX date-time
+                  example: 1548406235
+                stopLoss:
+                  type: number
+                  example: 1.23
+                trailingStopPips:
+                  type: number
+                  example: 1.34
+                takeProfit:
+                  type: number
+                  example: 1.12
+                digitalSignature:
+                  type: number
+                  example: 954345868
+                currentAsk:
+                  type: number
+                  example: 1.25
+                currentBid:
+                  type: number
+                  example: 1.23
+      responses:
+        '200':
+          description: SUCCESS
+          content:
+            application/json:
+              schema:
+                oneOf:
+                  - $ref: '#/components/schemas/PostOrderResponse'
+                  - $ref: '#/components/schemas/ErrorResponse'
+  /api/accounts/{accountId}/positions:
+    get:
+      tags:
+        - Account
+      summary: Get positions for an account.
+      description: Retrieve the open positions of account
+      security:
+        - bearerAuth: []
+      parameters:
+        - in: path
+          name: accountId
+          required: true
+          schema:
+            type: string
+            description: accountId of user
+        - in: query
+          name: locale
+          required: true
+          schema:
+            type: string
+            description: locale setting
+      responses:
+        '200':
+          description: SUCCESS
+          content:
+            application/json:
+              schema:
+                oneOf:
+                  - $ref: '#/components/schemas/PositionsResponse'
+                  - $ref: '#/components/schemas/ErrorResponse'
+  /api/accounts/{accountId}/executions:
+    get:
+      tags:
+        - Account
+      summary: Get a list of executions for an account and an instrument.
+      description: Returns the executed fills and trades
+      security:
+        - bearerAuth: []
+      parameters:
+        - in: path
+          name: accountId
+          required: true
+          schema:
+            type: string
+            description: accountId of user
+        - in: query
+          name: locale
+          required: true
+          schema:
+            type: string
+            description: locale setting
+        - in: query
+          name: instrument
+          required: true
+          schema:
+            type: string
+            description: Broker instrument name.
+        - in: query
+          name: maxCount
+          required: false
+          schema:
+            type: string
+            description: Maximum count of executions to return.
+      responses:
+        '200':
+          description: SUCCESS
+          content:
+            application/json:
+              schema:
+                oneOf:
+                  - $ref: '#/components/schemas/ExecutionsResponse'
+                  - $ref: '#/components/schemas/ErrorResponse'
+  /api/accounts/{accountId}/ordersHistory:
+    get:
+      tags:
+        - Account
+      summary: Get a list of history executions for an account and an instrument.
+      description: Returns the historical executed trades
+      security:
+        - bearerAuth: []
+      parameters:
+        - in: path
+          name: accountId
+          required: true
+          schema:
+            type: string
+            description: accountId of user
+        - in: query
+          name: locale
+          required: true
+          schema:
+            type: string
+            description: locale setting
+        - in: query
+          name: maxCount
+          required: false
+          schema:
+            type: string
+            description: Maximum count of executions to return.
+      responses:
+        '200':
+          description: SUCCESS
+          content:
+            application/json:
+              schema:
+                oneOf:
+                  - $ref: '#/components/schemas/OrdersHistoryResponse'
+                  - $ref: '#/components/schemas/ErrorResponse'
+  /api/accounts/{accountId}/orders/{orderId}:
+    put:
+      tags:
+        - Trading
+      summary: Modify an existing order
+      security:
+        - bearerAuth: []
+      parameters:
+        - in: path
+          name: accountId
+          required: true
+          schema:
+            type: string
+            description: accountId of user
+        - in: query
+          name: locale
+          required: true
+          schema:
+            type: string
+            description: locale setting
+        - in: path
+          name: orderId
+          required: true
+          schema:
+            type: string
+            description: Unique identifier for a request
+        - in: query
+          name: confirmId
+          required: true
+          schema:
+            type: string
+            description: identifier of an order received in the preview order request.
+      requestBody:
+        required: true
+        content:
+          application/x-www-form-urlencoded:
+            schema:
+              type: object
+              required:
+                - qty
+              properties:
+                qty:
+                  type: number
+                  example: 1000
+                limitPrice:
+                  type: number
+                  example: 1.23456
+                stopPrice:
+                  type: number
+                  example: 1.345
+                durationType:
+                  type: string
+                  example: gtt
+                durationDateTime:
+                  type: number
+                  format: UNIX date-time
+                  example: 1548406235
+                stopLoss:
+                  type: number
+                  example: 1.23
+                trailingStopPips:
+                  type: number
+                  example: 1.34
+                takeProfit:
+                  type: number
+                  example: 1.12
+                digitalSignature:
+                  type: number
+                  example: 954345868
+                currentAsk:
+                  type: number
+                  example: 1.25
+                currentBid:
+                  type: number
+                  example: 1.23
+      responses:
+        '200':
+          description: SUCCESS
+          content:
+            application/json:
+              schema:
+                oneOf:
+                  - $ref: '#/components/schemas/SuccessResponse'
+                  - $ref: '#/components/schemas/ErrorResponse'
+    delete:
+      tags:
+        - Trading
+      summary: Cancel an existing order.
+      security:
+        - bearerAuth: []
+      parameters:
+        - in: path
+          name: accountId
+          required: true
+          schema:
+            type: string
+            description: accountId of user
+        - in: query
+          name: locale
+          required: true
+          schema:
+            type: string
+            description: locale setting
+        - in: path
+          name: orderId
+          required: true
+          schema:
+            type: string
+            description: Unique identifier for a request
+      responses:
+        '200':
+          description: SUCCESS
+          content:
+            application/json:
+              schema:
+                oneOf:
+                  - $ref: '#/components/schemas/SuccessResponse'
+                  - $ref: '#/components/schemas/ErrorResponse'
+  /api/quotes:
+    get:
+      tags:
+        - Market Data
+      summary: Get current prices of the instrument.
+      security:
+        - bearerAuth: []
+      parameters:
+        - in: query
+          name: accountId
+          required: true
+          schema:
+            type: string
+            description: accountId of user
+        - in: query
+          name: locale
+          required: true
+          schema:
+            type: string
+            description: locale setting
+        - in: query
+          name: symbols
+          required: true
+          schema:
+            type: string
+            description: Unique identifier for a request
+      responses:
+        '200':
+          description: SUCCESS
+          content:
+            application/json:
+              schema:
+                oneOf:
+                  - $ref: '#/components/schemas/QuotesResponse'
+                  - $ref: '#/components/schemas/ErrorResponse'
+  /api/groups:
+    get:
+      tags:
+        - Data Permissions
+      summary: Get current prices of the instrument.
+      security:
+        - bearerAuth: []
+      responses:
+        '200':
+          description: SUCCESS
+          content:
+            application/json:
+              schema:
+                oneOf:
+                  - $ref: '#/components/schemas/GroupListResponse'
+                  - $ref: '#/components/schemas/ErrorResponse'
+  /api/permissions:
+    get:
+      tags:
+        - Data Permissions
+      summary: >-
+        Get a list of symbol groups allowed for the user. It is only required if
+        you use groups of symbols to restrict access to instrument's data.
+      security:
+        - bearerAuth: []
+      responses:
+        '200':
+          description: SUCCESS
+          content:
+            application/json:
+              schema:
+                oneOf:
+                  - $ref: '#/components/schemas/PermissionsResponse'
+                  - $ref: '#/components/schemas/ErrorResponse'
+  /api/symbol_info:
+    get:
+      tags:
+        - Data Integration
+      summary: Get a list of all instruments.
+      security:
+        - bearerAuth: []
+      parameters:
+        - in: query
+          name: group
+          required: true
+          schema:
+            type: string
+            description: ID of a symbol group
+      responses:
+        '200':
+          description: SUCCESS
+          content:
+            application/json:
+              schema:
+                oneOf:
+                  - $ref: '#/components/schemas/SymbolInfoResponse'
+                  - $ref: '#/components/schemas/ErrorResponse'
+  /api/history:
+    get:
+      tags:
+        - Data Integration
+      summary: Request for history bars
+      security:
+        - bearerAuth: []
+      parameters:
+        - in: query
+          name: symbol
+          required: true
+          schema:
+            type: string
+            description: Symbol name or ticker
+        - in: query
+          name: resolution
+          required: true
+          schema:
+            type: string
+            description: Symbol resolution
+        - in: query
+          name: from
+          required: true
+          schema:
+            type: string
+            description: Unix timestamp (UTC) of the leftmost required bar
+        - in: query
+          name: to
+          required: true
+          schema:
+            type: string
+            description: >-
+              Unix timestamp (UTC) of the rightmost required bar, including to.
+              It can be in the future. In this case, the rightmost required bar
+              is the latest available bar.
+        - in: query
+          name: countback
+          required: false
+          schema:
+            type: string
+            description: >-
+              Number of bars (higher priority than from) starting with to. If
+              countback is set, from should be ignored.
+      responses:
+        '200':
+          description: SUCCESS
+          content:
+            application/json:
+              schema:
+                oneOf:
+                  - $ref: '#/components/schemas/HistorySuccessResponse'
+                  - $ref: '#/components/schemas/HistoryNoDataResponse'
+                  - $ref: '#/components/schemas/HistoryNextBarResponse'
+                  - $ref: '#/components/schemas/ErrorResponse'
+  /streaming:
+    get:
+      tags:
+        - Data Integration
+      summary: Price server endpoint (https://demoapi8081.phillipnova.com.sg/streaming)
+      security:
+        - bearerAuth: []
+      responses:
+        '200':
+          description: SUCCESS
+          content:
+            application/json:
+              schema:
+                oneOf:
+                  - $ref: '#/components/schemas/StreamingQuoteResponse'
+                  - $ref: '#/components/schemas/StreamingTradeResponse'
+                  - $ref: '#/components/schemas/StreamingDailyBarResponse'
+components:
+  securitySchemes:
+    bearerAuth:
+      type: http
+      scheme: bearer
+  schemas:
+    AuthorizeResponse:
+      type: object
+      properties:
+        s:
+          type: string
+          example: ok
+        d:
+          type: object
+          properties:
+            access_token:
+              type: string
+              example: KW4yafaK2UivSaoYHLSuQZgi/KPeDeIbrqasvcvMiq6mrL3LzIoH
+            expiration:
+              type: integer
+              description: UNIX timestamp in milisecond
+              example: 1633807714526
+    SuccessResponse:
+      type: object
+      properties:
+        s:
+          type: string
+          example: ok
+    ErrorResponse:
+      type: object
+      properties:
+        s:
+          type: string
+          example: error
+        errmsg:
+          type: string
+          description: Error message
+    ConfigResponse:
+      type: object
+      properties:
+        s:
+          type: string
+          example: ok
+        d:
+          type: object
+          properties:
+            accountSummaryRow:
+              type: array
+              items:
+                type: object
+                properties:
+                  id:
+                    type: string
+                    example: accountBalance
+                  title:
+                    type: string
+                    example: Account Balance
+            accountManager:
+              type: array
+              items:
+                type: object
+                properties:
+                  id:
+                    type: string
+                    example: accountSummary
+                  title:
+                    type: string
+                    example: anything
+                  column:
+                    type: array
+                    items:
+                      type: object
+                      properties:
+                        id:
+                          type: string
+                          example: todayPL
+                        title:
+                          type: string
+                          example: Today's P&L
+            durations:
+              type: array
+              items:
+                type: object
+                properties:
+                  id:
+                    type: string
+                    example: GTT
+                  title:
+                    type: string
+                    example: Good Till Time
+                  hasDatePicker:
+                    type: boolean
+                    example: true
+                  hasTimePicker:
+                    type: boolean
+                    example: true
+                  default:
+                    type: boolean
+                    example: true
+                  supportedOrderTypes:
+                    type: array
+                    items:
+                      type: string
+                      example: stop
+            orderCustomFields:
+              type: array
+              items:
+                type: object
+                properties:
+                  id:
+                    type: string
+                    example: commission
+                  title:
+                    type: string
+                    example: Commission
+                  tooltip:
+                    type: string
+                    example: Commission Fees
+                  alignment:
+                    type: string
+                    example: right
+            orderHistoryCustomFields:
+              type: array
+              items:
+                type: object
+                properties:
+                  id:
+                    type: string
+                    example: commission
+                  title:
+                    type: string
+                    example: Commission
+                  tooltip:
+                    type: string
+                    example: Commission Fees
+                  alignment:
+                    type: string
+                    example: right
+            positionCustomFields:
+              type: array
+              items:
+                type: object
+                properties:
+                  id:
+                    type: string
+                    example: commission
+                  title:
+                    type: string
+                    example: Commission
+                  tooltip:
+                    type: string
+                    example: Commission Fees
+                  alignment:
+                    type: string
+                    example: right
+            pullingInterval:
+              type: object
+              properties:
+                quotes:
+                  type: number
+                  example: 500
+                orders:
+                  type: number
+                  example: 500
+                position:
+                  type: number
+                  example: 500
+                accountManager:
+                  type: number
+                  example: 1000
+                balances:
+                  type: number
+                  example: 1000
+    AccountResponse:
+      type: object
+      properties:
+        s:
+          type: string
+          example: ok
+        d:
+          type: array
+          items:
+            type: object
+            properties:
+              id:
+                type: string
+                example: ACC-001
+              name:
+                type: string
+                example: Demo trading account
+              type:
+                type: string
+                example: demo
+              currency:
+                type: string
+                example: JPY
+              currencySign:
+                type: string
+                example: ¥
+              config:
+                type: object
+                properties:
+                  showQuantityInsteadOfAmount:
+                    type: boolean
+                  supportDOM:
+                    type: boolean
+                  supportBrackets:
+                    type: boolean
+                  supportOrderBrackets:
+                    type: boolean
+                  supportMarketBrackets:
+                    type: boolean
+                  supportPositions:
+                    type: boolean
+                  supportMultiposition:
+                    type: boolean
+                  supportPositionBrackets:
+                    type: boolean
+                  supportClosePosition:
+                    type: boolean
+                  supportPartialClosePosition:
+                    type: boolean
+                  supportReversePosition:
+                    type: boolean
+                  supportNativeReversePosition:
+                    type: boolean
+                  supportModifyOrder:
+                    type: boolean
+                  supportModifyOrderPrice:
+                    type: boolean
+                  supportEditAmount:
+                    type: boolean
+                  supportModifyBrackets:
+                    type: boolean
+                  supportModifyDuration:
+                    type: boolean
+                  supportLevel2Data:
+                    type: boolean
+                  supportPLUpdate:
+                    type: boolean
+                  supportMarketOrders:
+                    type: boolean
+                  supportLimitOrders:
+                    type: boolean
+                  supportStopOrders:
+                    type: boolean
+                  supportStopOrdersInBothDirections:
+                    type: boolean
+                  supportStopLimitOrders:
+                    type: boolean
+                  supportOrdersHistory:
+                    type: boolean
+                  supportExecutions:
+                    type: boolean
+                  supportDigitalSignature:
+                    type: boolean
+                  supportBalances:
+                    type: boolean
+                  supportDisplayBrokerNameInSymbolSearch:
+                    type: boolean
+                  supportCryptoExchangeOrderTicket:
+                    type: boolean
+                  supportCustomAccountSummaryRow:
+                    type: boolean
+                  supportPartialOrderExecution:
+                    type: boolean
+                  supportOrderCustomFields:
+                    type: boolean
+                  supportOrderHistoryCustomFields:
+                    type: boolean
+                  supportPlaceOrderPreview:
+                    type: boolean
+                  supportModifyOrderPreview:
+                    type: boolean
+                  supportTrailingStop:
+                    type: boolean
+                  supportLogout:
+                    type: boolean
+              ui:
+                type: object
+                properties:
+                  accountSummaryRow:
+                    type: array
+                    items:
+                      type: object
+                      properties:
+                        id:
+                          type: string
+                          example: accountBalance
+                        title:
+                          type: string
+                          example: Account Balance
+                  accountManager:
+                    type: array
+                    items:
+                      type: object
+                      properties:
+                        id:
+                          type: string
+                          example: accountSummary
+                        title:
+                          type: string
+                          example: anything
+                        column:
+                          type: array
+                          items:
+                            type: object
+                            properties:
+                              id:
+                                type: string
+                                example: todayPL
+                              title:
+                                type: string
+                                example: Today's P&L
+                  orderCustomFields:
+                    type: array
+                    items:
+                      type: object
+                      properties:
+                        id:
+                          type: string
+                          example: commission
+                        title:
+                          type: string
+                          example: Commission
+                        tooltip:
+                          type: string
+                          example: Commission Fees
+                        alignment:
+                          type: string
+                          example: right
+                  orderHistoryCustomFields:
+                    type: array
+                    items:
+                      type: object
+                      properties:
+                        id:
+                          type: string
+                          example: commission
+                        title:
+                          type: string
+                          example: Commission
+                        tooltip:
+                          type: string
+                          example: Commission Fees
+                        alignment:
+                          type: string
+                          example: right
+                  positionCustomFields:
+                    type: array
+                    items:
+                      type: object
+                      properties:
+                        id:
+                          type: string
+                          example: commission
+                        title:
+                          type: string
+                          example: Commission
+                        tooltip:
+                          type: string
+                          example: Commission Fees
+                        alignment:
+                          type: string
+                          example: right
+                  orderDialogCustomFields:
+                    type: object
+                    properties:
+                      comboBox:
+                        type: array
+                        items:
+                          type: object
+                          properties:
+                            id:
+                              type: string
+                              example: customInputFieldId
+                            title:
+                              type: string
+                              example: Additional parameters
+                            saveToSettings:
+                              type: boolean
+                            mutable:
+                              type: boolean
+                            forceUserEnterInitialValue:
+                              type: boolean
+                            items:
+                              type: array
+                              items:
+                                type: object
+                                properties:
+                                  text:
+                                    type: string
+                                    example: text
+                                  value:
+                                    type: string
+                                    example: value
+              durations:
+                type: array
+                items:
+                  type: object
+                  properties:
+                    id:
+                      type: string
+                      example: GTT
+                    title:
+                      type: string
+                      example: Good Till Time
+                    hasDatePicker:
+                      type: boolean
+                      example: true
+                    hasTimePicker:
+                      type: boolean
+                      example: true
+                    default:
+                      type: boolean
+                      example: true
+                    supportedOrderTypes:
+                      type: array
+                      items:
+                        type: string
+                        example: stop
+              prefix:
+                type: string
+                example: NASDAQ
+    InstrumentsResponse:
+      type: object
+      properties:
+        s:
+          type: string
+          example: ok
+        d:
+          type: array
+          items:
+            type: object
+            properties:
+              name:
+                type: string
+                example: EURUSD
+              description:
+                type: string
+                example: EUR/USD
+              minQty:
+                type: number
+                example: 1
+              maxQty:
+                type: number
+                example: 100
+              qtyStep:
+                type: number
+                example: 100
+              pipSize:
+                type: number
+                example: 0.0001
+              pipValue:
+                type: number
+                example: 0.00008845
+              minTick:
+                type: number
+                example: 0.00001
+              lotSize:
+                type: number
+                example: 10
+              baseCurrency:
+                type: string
+                example: LTC
+              quoteCurrency:
+                type: string
+                example: BTC
+              marginRate:
+                type: number
+                example: 0.05
+              hasQuotes:
+                type: boolean
+              units:
+                type: string
+                example: string
+              type:
+                type: string
+                example: forex
+              ui:
+                type: object
+                properties:
+                  orderDialogCustomFields:
+                    type: object
+                    properties:
+                      comboBox:
+                        type: array
+                        items:
+                          type: object
+                          properties:
+                            id:
+                              type: string
+                              example: customInputFieldId
+                            title:
+                              type: string
+                              example: Additional parameters
+                            saveToSettings:
+                              type: boolean
+                            mutable:
+                              type: boolean
+                            forceUserEnterInitialValue:
+                              type: boolean
+                            items:
+                              type: array
+                              items:
+                                type: object
+                                properties:
+                                  text:
+                                    type: string
+                                    example: text
+                                  value:
+                                    type: string
+                                    example: value
+                  validationRules:
+                    oneOf:
+                      - $ref: '#/components/schemas/StopPercentValidationRule'
+                      - $ref: '#/components/schemas/LimitPercentValidationRule'
+                      - $ref: '#/components/schemas/StopLossPercentValidationRule'
+                      - $ref: '#/components/schemas/TakeProfitPercentValidationRule'
+    StopPercentValidationRule:
+      type: array
+      items:
+        type: object
+        properties:
+          id:
+            type: string
+            example: stopPercent
+          options:
+            type: object
+            properties:
+              min:
+                type: number
+                example: 10
+              max:
+                type: number
+                example: 90
+    LimitPercentValidationRule:
+      type: array
+      items:
+        type: object
+        properties:
+          id:
+            type: string
+            example: limitPercent
+          options:
+            type: object
+            properties:
+              min:
+                type: number
+                example: 10
+              max:
+                type: number
+                example: 90
+    StopLossPercentValidationRule:
+      type: array
+      items:
+        type: object
+        properties:
+          id:
+            type: string
+            example: slPercent
+          options:
+            type: object
+            properties:
+              min:
+                type: number
+                example: 10
+              max:
+                type: number
+                example: 90
+    TakeProfitPercentValidationRule:
+      type: array
+      items:
+        type: object
+        properties:
+          id:
+            type: string
+            example: tpPercent
+          options:
+            type: object
+            properties:
+              min:
+                type: number
+                example: 10
+              max:
+                type: number
+                example: 90
+    AccountStateResponse:
+      type: object
+      properties:
+        s:
+          type: string
+          example: ok
+        d:
+          type: object
+          properties:
+            balance:
+              type: number
+              example: 41757.91
+            unrealizedPl:
+              type: number
+              example: 1053.02
+            equity:
+              type: number
+              example: 42857.56
+            amData:
+              type: array
+              items:
+                type: array
+                items:
+                  type: array
+                  items:
+                    type: string
+                    example: '42857.56'
+            accountSummaryRowData:
+              type: array
+              items:
+                type: string
+                example: '96837.12'
+    OrdersResponse:
+      type: object
+      properties:
+        s:
+          type: string
+          example: ok
+        d:
+          type: array
+          items:
+            type: object
+            properties:
+              id:
+                type: string
+                example: 1
+              instrument:
+                type: string
+                example: EURUSD
+              qty:
+                type: number
+                example: 100
+              side:
+                type: string
+                example: buy
+              type:
+                type: string
+                example: limit
+              avgPrice:
+                type: number
+                example: 90.45
+              limitPrice:
+                type: number
+                example: 1.14344
+              duration:
+                type: object
+                properties:
+                  type:
+                    type: string
+                    example: gtt
+                  datetime:
+                    type: number
+                    format: Unix date-time
+                    example: 1548406235
+              status:
+                type: string
+                example: working
+              customFields:
+                type: array
+                items:
+                  type: object
+                  properties:
+                    id:
+                      type: string
+                      example: commission
+                    value:
+                      type: string
+                      example: '1.25'
+              message:
+                type: object
+                properties:
+                  text:
+                    type: string
+                    example: Insufficient Margin
+                  type:
+                    type: string
+                    example: error
+    PositionsResponse:
+      type: object
+      properties:
+        s:
+          type: string
+          example: ok
+        d:
+          type: array
+          items:
+            type: object
+            properties:
+              id:
+                type: string
+                example: 1
+              instrument:
+                type: string
+                example: EURUSD
+              qty:
+                type: number
+                example: 100
+              side:
+                type: string
+                example: buy
+              avgPrice:
+                type: number
+                example: 90.45
+              unrealizedPl:
+                type: number
+                example: 19.4739
+              message:
+                type: object
+                properties:
+                  text:
+                    type: string
+                    example: |-
+                      You can add brackets to this
+                      position to protect it
+                  type:
+                    type: string
+                    example: Information
+              customFields:
+                type: array
+                items:
+                  type: object
+                  properties:
+                    id:
+                      type: string
+                      example: commission
+                    value:
+                      type: string
+                      example: '1.25'
+    ExecutionsResponse:
+      type: object
+      properties:
+        s:
+          type: string
+          example: Ok
+        d:
+          type: array
+          items:
+            type: object
+            properties:
+              id:
+                type: string
+                example: EX34567
+              instrument:
+                type: string
+                example: EURUSD
+              price:
+                type: number
+                example: 1.23564
+              time:
+                type: number
+                format: UNIX date-time
+                example: 1548406235
+              qty:
+                type: number
+                example: 1
+              side:
+                type: string
+                example: buy
+              orderId:
+                type: string
+                example: '1263159154'
+              isClose:
+                type: boolean
+              positionId:
+                type: string
+                example: '10098'
+              commission:
+                type: number
+                example: 0.004
+    OrdersHistoryResponse:
+      type: object
+      properties:
+        s:
+          type: string
+          example: ok
+        d:
+          type: array
+          items:
+            type: object
+            properties:
+              id:
+                type: string
+                example: '1'
+              instrument:
+                type: string
+                example: EURUSD
+              qty:
+                type: number
+                example: 100
+              side:
+                type: string
+                example: buy
+              type:
+                type: string
+                example: limit
+              avgPrice:
+                type: number
+                example: 1.2
+              limitPrice:
+                type: number
+                example: 1.14344
+              duration:
+                type: object
+                properties:
+                  type:
+                    type: string
+                    example: gtt
+                  datetime:
+                    type: number
+                    format: Unix date-time
+                    example: 1548406235
+              status:
+                type: string
+                example: filled
+              filledQty:
+                type: number
+                example: 50
+              parentId:
+                type: number
+                example: '1'
+              parentType:
+                type: string
+                example: order
+    PostOrderResponse:
+      type: object
+      properties:
+        s:
+          type: string
+          example: ok
+        d:
+          type: object
+          properties:
+            orderId:
+              type: string
+              example: '1'
+    QuotesResponse:
+      type: object
+      properties:
+        s:
+          type: string
+          example: ok
+        d:
+          type: array
+          items:
+            type: object
+            properties:
+              s:
+                type: string
+                example: ok
+              'n':
+                type: string
+                example: EURUSD
+              v:
+                type: object
+                properties:
+                  ask:
+                    type: number
+                    example: 1200
+                  bid:
+                    type: number
+                    example: 1000
+                  buyPipValue:
+                    type: number
+                    example: 1
+                  sellPipValue:
+                    type: number
+                    example: 1
+    GroupListResponse:
+      type: object
+      properties:
+        s:
+          type: string
+          example: ok
+        d:
+          type: object
+          properties:
+            groups:
+              type: array
+              items:
+                type: object
+                properties:
+                  id:
+                    type: string
+                    example: broker_stocks
+    PermissionsResponse:
+      type: object
+      properties:
+        s:
+          type: string
+          example: ok
+        d:
+          type: object
+          properties:
+            groups:
+              type: array
+              items:
+                type: string
+                example: broker_forex
+    SymbolInfoResponse:
+      type: object
+      properties:
+        s:
+          type: string
+          example: ok
+        symbol:
+          type: array
+          items:
+            type: string
+            example: VIXG2019
+        description:
+          type: array
+          items:
+            type: string
+            example: Volatility Index
+        currency:
+          type: array
+          items:
+            type: string
+            example: USD
+        base-currency:
+          type: array
+          items:
+            type: string
+            example: EUR
+        exchange-listed:
+          type: array
+          items:
+            type: string
+            example: CBOE
+        exchange-traded:
+          type: array
+          items:
+            type: string
+            example: CBOE
+        minmovement:
+          type: array
+          items:
+            type: number
+            example: 1
+        minmov2:
+          type: array
+          items:
+            type: number
+            example: 0
+        fractional:
+          type: array
+          items:
+            type: boolean
+        root:
+          type: array
+          items:
+            type: string
+            example: VIX
+        root-description:
+          type: array
+          items:
+            type: string
+            example: Volatility Index
+        has-intraday:
+          type: array
+          items:
+            type: boolean
+        has-no-volume:
+          type: array
+          items:
+            type: boolean
+        type:
+          type: array
+          items:
+            type: string
+            example: futures
+        is-cfd:
+          type: array
+          items:
+            type: boolean
+        ticker:
+          type: array
+          items:
+            type: string
+            example: VIXG2019
+        timezone:
+          type: array
+          items:
+            type: string
+            example: America/New_York
+        session-regular:
+          type: array
+          items:
+            type: string
+            example: 0000-2359:23456
+        session-extended:
+          type: array
+          items:
+            type: string
+            example: 0000-2359:23456
+        session-premarket:
+          type: array
+          items:
+            type: string
+            example: 0000-2359:23456
+        session-postmarket:
+          type: array
+          items:
+            type: string
+            example: 0000-2359:23456
+        supported-resolutions:
+          type: array
+          items:
+            type: array
+            items:
+              type: string
+              example: '1'
+        has-daily:
+          type: array
+          items:
+            type: boolean
+        intraday-multipliers:
+          type: array
+          items:
+            type: array
+            items:
+              type: string
+              example: '1'
+        has-weekly-and-monthly:
+          type: array
+          items:
+            type: boolean
+        pointvalue:
+          type: array
+          items:
+            type: number
+            example: 1
+        expiration:
+          type: array
+          items:
+            type: number
+            example: 20190213
+        bar-source:
+          type: array
+          items:
+            type: string
+            example: trade
+        bar-transform:
+          type: array
+          items:
+            type: string
+            example: openprev
+        bar-fillgaps:
+          type: array
+          items:
+            type: boolean
+    HistorySuccessResponse:
+      type: object
+      properties:
+        s:
+          type: string
+          example: ok
+        t:
+          type: array
+          items:
+            type: number
+            example: 1547942400
+        o:
+          type: array
+          items:
+            type: number
+            example: 3667
+        h:
+          type: array
+          items:
+            type: number
+            example: 3667.24
+        l:
+          type: array
+          items:
+            type: number
+            example: 3667.24
+        c:
+          type: array
+          items:
+            type: number
+            example: 3667.24
+        v:
+          type: array
+          items:
+            type: number
+            example: 3667.24
+    HistoryNoDataResponse:
+      type: object
+      properties:
+        s:
+          type: string
+          example: no_data
+    HistoryNextBarResponse:
+      type: object
+      properties:
+        s:
+          type: string
+          example: no_data
+        nb:
+          type: number
+          example: 1484871000
+    StreamingQuoteResponse:
+      type: object
+      properties:
+        f:
+          type: string
+          example: q
+        id:
+          type: string
+          example: EURUSD
+        t:
+          type: number
+          example: 1547942400
+        ap:
+          type: number
+          example: 1.47245
+        as:
+          type: number
+          example: 100
+        bp:
+          type: number
+          example: 1.47245
+        bs:
+          type: number
+          example: 100
+    StreamingTradeResponse:
+      type: object
+      properties:
+        f:
+          type: string
+          example: t
+        id:
+          type: string
+          example: EURUSD
+        p:
+          type: number
+          example: 1.47245
+        s:
+          type: number
+          example: 100
+        t:
+          type: number
+          example: 1547942400
+    StreamingDailyBarResponse:
+      type: object
+      properties:
+        f:
+          type: string
+          example: d
+        id:
+          type: string
+          example: EURUSD
+        o:
+          type: number
+          example: 3667
+        h:
+          type: number
+          example: 3667.24
+        l:
+          type: number
+          example: 3661.55
+        c:
+          type: number
+          example: 3662.25
+        v:
+          type: number
+          example: 34
+        t:
+          type: number
+          example: 1547931600
+externalDocs:
+  url: https://app.swaggerhub.com/apis/NOVARESTAPI/phillip-nova_rest_api/1.0.0
+  description: A copy of this documentation is also available in Swagger Hub
